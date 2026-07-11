@@ -19,7 +19,7 @@ done
 launch() {
   for bin in google-chrome chromium-browser chromium google-chrome-stable microsoft-edge brave-browser; do
     if command -v "$bin" >/dev/null 2>&1; then
-      "$bin" --kiosk --no-first-run --disable-infobars --disable-session-crashed-bubble --disable-restore-session-state "$URL" &
+      "$bin" --kiosk --no-first-run --no-sandbox --disable-gpu --disable-infobars --disable-session-crashed-bubble --disable-restore-session-state "$URL" &
       BROWSER_PID=$!
       return 0
     fi
