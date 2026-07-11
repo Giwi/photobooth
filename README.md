@@ -19,10 +19,18 @@ Or use the launch script (starts the server and opens a fullscreen browser):
 
 ## How it works
 
-1. The live webcam feed fills the viewport
+1. The live webcam feed fills the viewport (mirrored by default for a natural selfie view)
 2. Select a background from the top bar — it overlays the video in real time
-3. Click the capture button (or press Space) — 3-2-1 countdown, then flash
+3. Click the capture button (or tap the screen / press Space) — 3-2-1 countdown, then flash
 4. Preview the result, then choose **Save**, **Print**, or **Discard**
+
+## Photo strip
+
+Toggle strip mode (grid icon in the settings bar, or press `T`) to capture 4 shots in sequence. Each shot has its own countdown. The photos are arranged in a 2×2 grid and saved/printed as one image.
+
+## Mirror mode
+
+The webcam feed is mirrored by default (like a mirror). Toggle it off with the arrow icon in the settings bar or press `M`.
 
 ## Backgrounds
 
@@ -72,6 +80,8 @@ Without a position, backgrounds are centered on the canvas.
 | `Enter` | Save and print |
 | `Escape` | Discard |
 | `←` `→` | Cycle backgrounds |
+| `m` | Toggle mirror mode |
+| `t` | Toggle strip mode |
 
 ## Configuration
 

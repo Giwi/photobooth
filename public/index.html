@@ -24,6 +24,19 @@
         </div>
       </div>
     </div>
+    <div id="settings">
+      <button id="btn-mirror" class="setting-btn" title="Mirror mode (M)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16l-4-4 4-4"/><path d="M17 8l4 4-4 4"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
+      </button>
+      <div id="countdown-setting">
+        <button class="cd-btn active" data-duration="3">3s</button>
+        <button class="cd-btn" data-duration="5">5s</button>
+        <button class="cd-btn" data-duration="10">10s</button>
+      </div>
+      <button id="btn-strip" class="setting-btn" title="Photo strip (T)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="5" rx="1"/><rect x="4" y="9.5" width="16" height="5" rx="1"/><rect x="4" y="17" width="16" height="5" rx="1"/></svg>
+      </button>
+    </div>
     <button id="capture"></button>
   </div>
   <script type="module" src="app.js"></script>

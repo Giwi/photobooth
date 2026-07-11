@@ -4,7 +4,7 @@ const liveCtx = liveCanvas.getContext("2d");
 const compositor = document.getElementById("compositor");
 const ctx = compositor.getContext("2d");
 const flash = document.getElementById("flash");
-const countdown = document.getElementById("countdown");
+const countdownEl = document.getElementById("countdown");
 const preview = document.getElementById("preview");
 const previewImg = document.getElementById("preview-img");
 const btnSave = document.getElementById("btn-save");
@@ -12,6 +12,8 @@ const btnPrint = document.getElementById("btn-print");
 const btnCancel = document.getElementById("btn-cancel");
 const backgroundsEl = document.getElementById("backgrounds");
 const captureBtn = document.getElementById("capture");
+const btnMirror = document.getElementById("btn-mirror");
+const btnStrip = document.getElementById("btn-strip");
 
 const W = 1280;
 const H = 720;
@@ -23,15 +25,17 @@ compositor.height = H;
 const NO_BG_SVG = "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="80" height="56"><rect x="4" y="4" width="72" height="48" rx="6" fill="none" stroke="#888" stroke-width="2.5"/><line x1="18" y1="14" x2="62" y2="42" stroke="#888" stroke-width="2.5" stroke-linecap="round"/><line x1="62" y1="14" x2="18" y2="42" stroke="#888" stroke-width="2.5" stroke-linecap="round"/></svg>`);
 
 let selectedBg = 0;
-let backgrounds = []; // [{ file, position }, ...]  index 0 = null (No BG)
+let backgrounds = [];
 let bgImage = null;
 let bgReady = false;
 let busy = false;
+let mirrorMode = true;
+let countdownDuration = 3;
+let stripMode = false;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // --- Position parser ---
-// "top", "bottom", "left", "right", "30%", "top right", "bottom 25%", "50% 70%"
 function parsePosition(pos) {
   if (!pos) return { x: 0.5, y: 0.5 };
   const parts = pos.trim().split(/\s+/);
@@ -52,7 +56,6 @@ function parsePosition(pos) {
 }
 
 // --- Image loading ---
-
 function loadBgImage(src) {
   bgImage = new Image();
   bgReady = false;
@@ -80,7 +83,15 @@ function drawBg() {
   liveCtx.clearRect(0, 0, W, H);
   if (bgReady) {
     const pos = backgrounds[selectedBg]?.position || null;
-    drawBgTo(liveCtx, bgImage, W, H, pos);
+    if (mirrorMode) {
+      liveCtx.save();
+      liveCtx.translate(W, 0);
+      liveCtx.scale(-1, 1);
+      drawBgTo(liveCtx, bgImage, W, H, pos);
+      liveCtx.restore();
+    } else {
+      drawBgTo(liveCtx, bgImage, W, H, pos);
+    }
   }
 }
 
@@ -96,7 +107,6 @@ function applyBg(i) {
 }
 
 // --- Backgrounds UI ---
-
 function renderBackgrounds() {
   backgroundsEl.innerHTML = "";
   backgrounds.forEach((bg, i) => {
@@ -120,56 +130,183 @@ function updateBgSelection() {
 }
 
 // --- Capture ---
-
 captureBtn.addEventListener("click", capture);
+
+document.getElementById("viewport").addEventListener("click", (e) => {
+  if (e.target.closest("#preview")) return;
+  if (!busy) capture();
+});
 
 async function capture() {
   if (busy) return;
   busy = true;
   captureBtn.disabled = true;
 
-  for (let i = 3; i >= 1; i--) {
-    countdown.textContent = i;
-    countdown.style.display = "flex";
-    await sleep(700);
-    countdown.style.display = "none";
-    await sleep(100);
-  }
-
-  flash.classList.add("active");
-  await sleep(80);
-  flash.classList.remove("active");
-
-  ctx.drawImage(video, 0, 0, W, H);
-  if (bgReady) {
-    const pos = backgrounds[selectedBg]?.position || null;
-    drawBgTo(ctx, bgImage, W, H, pos);
-  }
-
-  const dataUrl = compositor.toDataURL("image/png");
-  previewImg.src = dataUrl;
-  preview.hidden = false;
-
-  const action = await new Promise((resolve) => {
-    btnSave.onclick = () => { preview.hidden = true; resolve("save"); };
-    btnPrint.onclick = () => { preview.hidden = true; resolve("print"); };
-    btnCancel.onclick = () => { preview.hidden = true; resolve("cancel"); };
-  });
-
-  if (action === "save" || action === "print") {
-    fetch("/api/photo", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ image: dataUrl, print: action === "print" }),
-    }).catch((e) => console.error("Save/print failed:", e));
+  if (stripMode) {
+    await captureStrip();
+  } else {
+    await captureSingle();
   }
 
   busy = false;
   captureBtn.disabled = false;
 }
 
-// --- Keyboard ---
+async function captureSingle() {
+  for (let i = countdownDuration; i >= 1; i--) {
+    showCountdown(i);
+    await sleep(700);
+    hideCountdown();
+    await sleep(100);
+  }
 
+  flashCapture();
+  const frame = captureFrame();
+  const dataUrl = frameToDataUrl(frame);
+  previewImg.src = dataUrl;
+  preview.hidden = false;
+
+  const action = await waitForAction();
+  if (action !== "cancel") {
+    savePhoto(dataUrl, action === "print");
+  }
+}
+
+async function captureStrip() {
+  const frames = [];
+
+  for (let shot = 0; shot < 4; shot++) {
+    for (let i = countdownDuration; i >= 1; i--) {
+      showCountdown(i);
+      await sleep(700);
+      hideCountdown();
+      await sleep(100);
+    }
+
+    flashCapture();
+    frames.push(captureFrame());
+
+    if (shot < 3) await sleep(500);
+  }
+
+  const stripDataUrl = createStrip(frames);
+  previewImg.src = stripDataUrl;
+  preview.hidden = false;
+
+  const action = await waitForAction();
+  if (action !== "cancel") {
+    savePhoto(stripDataUrl, action === "print");
+  }
+}
+
+function showCountdown(num) {
+  countdownEl.textContent = num;
+  countdownEl.style.display = "flex";
+  countdownEl.classList.remove("animate");
+  void countdownEl.offsetWidth;
+  countdownEl.classList.add("animate");
+}
+
+function hideCountdown() {
+  countdownEl.style.display = "none";
+}
+
+function flashCapture() {
+  flash.classList.add("active");
+  setTimeout(() => flash.classList.remove("active"), 80);
+}
+
+function captureFrame() {
+  if (mirrorMode) {
+    ctx.save();
+    ctx.translate(W, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0, W, H);
+    ctx.restore();
+  } else {
+    ctx.drawImage(video, 0, 0, W, H);
+  }
+  if (bgReady) {
+    const pos = backgrounds[selectedBg]?.position || null;
+    drawBgTo(ctx, bgImage, W, H, pos);
+  }
+  return ctx.getImageData(0, 0, W, H);
+}
+
+function frameToDataUrl(imageData) {
+  const c = document.createElement("canvas");
+  c.width = W;
+  c.height = H;
+  c.getContext("2d").putImageData(imageData, 0, 0);
+  return c.toDataURL("image/png");
+}
+
+function createStrip(frames) {
+  const gap = 2;
+  const cw = W / 2;
+  const ch = H / 2;
+  const c = document.createElement("canvas");
+  c.width = W;
+  c.height = H;
+  const sCtx = c.getContext("2d");
+
+  sCtx.fillStyle = "#000";
+  sCtx.fillRect(0, 0, W, H);
+
+  const positions = [[0, 0], [cw + gap, 0], [0, ch + gap], [cw + gap, ch + gap]];
+  frames.forEach((imageData, i) => {
+    const tmp = document.createElement("canvas");
+    tmp.width = W;
+    tmp.height = H;
+    tmp.getContext("2d").putImageData(imageData, 0, 0);
+    sCtx.drawImage(tmp, positions[i][0], positions[i][1], cw, ch);
+  });
+
+  return c.toDataURL("image/png");
+}
+
+function waitForAction() {
+  return new Promise((resolve) => {
+    btnSave.onclick = () => { preview.hidden = true; resolve("save"); };
+    btnPrint.onclick = () => { preview.hidden = true; resolve("print"); };
+    btnCancel.onclick = () => { preview.hidden = true; resolve("cancel"); };
+  });
+}
+
+function savePhoto(dataUrl, print) {
+  fetch("/api/photo", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ image: dataUrl, print }),
+  }).catch((e) => console.error("Save/print failed:", e));
+}
+
+// --- Settings ---
+function applyMirror() {
+  video.style.transform = mirrorMode ? "scaleX(-1)" : "";
+  btnMirror.classList.toggle("active", mirrorMode);
+}
+
+btnMirror.addEventListener("click", () => {
+  mirrorMode = !mirrorMode;
+  applyMirror();
+  drawBg();
+});
+
+btnStrip.addEventListener("click", () => {
+  stripMode = !stripMode;
+  btnStrip.classList.toggle("active", stripMode);
+});
+
+document.querySelectorAll(".cd-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    countdownDuration = parseInt(btn.dataset.duration);
+    document.querySelectorAll(".cd-btn").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+  });
+});
+
+// --- Keyboard ---
 document.addEventListener("keydown", (e) => {
   if (e.key === " " || e.code === "Space") {
     e.preventDefault();
@@ -184,17 +321,22 @@ document.addEventListener("keydown", (e) => {
     if (!busy && backgrounds.length) applyBg((selectedBg - 1 + backgrounds.length) % backgrounds.length);
   } else if (e.key === "ArrowRight") {
     if (!busy && backgrounds.length) applyBg((selectedBg + 1) % backgrounds.length);
+  } else if (e.key === "m" || e.key === "M") {
+    btnMirror.click();
+  } else if (e.key === "t" || e.key === "T") {
+    btnStrip.click();
   }
 });
 
 // --- Init ---
-
 async function init() {
   const stream = await navigator.mediaDevices.getUserMedia({
     video: { width: { ideal: W }, height: { ideal: H } },
   });
   video.srcObject = stream;
   await video.play();
+
+  applyMirror();
 
   const res = await fetch("/api/backgrounds");
   backgrounds = [null, ...await res.json()];
