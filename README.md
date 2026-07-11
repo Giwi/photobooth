@@ -1,6 +1,6 @@
 # Photobooth
 
-A web-based photobooth built with Node.js and TypeScript. Captures photos from a webcam, overlays PNG backgrounds, and saves or prints the result. Output is sized 10×15 cm (2:3 ratio, 1200×1800 px at 300 DPI) for printing on standard photo paper.
+A web-based photobooth built with Node.js and TypeScript. Captures photos from a webcam, overlays PNG backgrounds, and saves or prints the result. Output is sized 10×15 cm (2:3 ratio, 1800×1200 px at 300 DPI) for printing on standard photo paper.
 
 ## Quick start
 
@@ -46,6 +46,7 @@ Use `config.json` to override where a background is placed on the canvas:
 
 ```json
 {
+  "watermark": "© 2026 My Photobooth",
   "backgrounds": {
     "beach.png": { "position": "bottom right" },
     "sky.png": { "position": "top" },
@@ -70,6 +71,19 @@ Examples:
 - `"50% 25%"` — vertically centered, 25% from the left
 
 Without a position, backgrounds are centered on the canvas.
+
+## Watermark
+
+Add an optional watermark text displayed on a translucent bar at the bottom of every captured photo:
+
+```json
+{
+  "watermark": "© 2026 My Photobooth",
+  "backgrounds": { ... }
+}
+```
+
+Omit or leave empty to disable.
 
 ## Keyboard shortcuts
 
