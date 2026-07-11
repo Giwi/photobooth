@@ -1,6 +1,6 @@
 # Photobooth
 
-A web-based photobooth built with Node.js and TypeScript. Captures photos from a webcam, overlays PNG backgrounds, and saves or prints the result.
+A web-based photobooth built with Node.js and TypeScript. Captures photos from a webcam, overlays PNG backgrounds, and saves or prints the result. Output is sized 10×15 cm (2:3 ratio, 1200×1800 px at 300 DPI) for printing on standard photo paper.
 
 ## Quick start
 

@@ -15,8 +15,8 @@ const captureBtn = document.getElementById("capture");
 const btnMirror = document.getElementById("btn-mirror");
 const btnStrip = document.getElementById("btn-strip");
 
-const W = 1280;
-const H = 720;
+const W = 1800;
+const H = 1200;
 liveCanvas.width = W;
 liveCanvas.height = H;
 compositor.width = W;
@@ -72,7 +72,7 @@ function clearBg() {
 function drawBgTo(c, img, cw, ch, position) {
   const iw = img.naturalWidth || img.width;
   const ih = img.naturalHeight || img.height;
-  const scale = Math.min(cw / iw, ch / ih);
+  const scale = Math.max(cw / iw, ch / ih);
   const sw = iw * scale;
   const sh = ih * scale;
   const { x, y } = parsePosition(position);
@@ -221,16 +221,25 @@ function captureFrame() {
     ctx.save();
     ctx.translate(W, 0);
     ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0, W, H);
+    drawVideoCrop(ctx);
     ctx.restore();
   } else {
-    ctx.drawImage(video, 0, 0, W, H);
+    drawVideoCrop(ctx);
   }
   if (bgReady) {
     const pos = backgrounds[selectedBg]?.position || null;
     drawBgTo(ctx, bgImage, W, H, pos);
   }
   return ctx.getImageData(0, 0, W, H);
+}
+
+function drawVideoCrop(c) {
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  const scale = Math.max(W / vw, H / vh);
+  const sw = vw * scale;
+  const sh = vh * scale;
+  c.drawImage(video, (W - sw) / 2, (H - sh) / 2, sw, sh);
 }
 
 function frameToDataUrl(imageData) {

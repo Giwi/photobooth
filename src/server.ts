@@ -64,7 +64,7 @@ app.post("/api/photo", async (req, res) => {
   console.log(`Saved ${filepath}`);
 
   if (print) {
-    execFile("lp", [filepath], (err, _stdout, stderr) => {
+    execFile("lp", ["-o", "media=4x6in", "-o", "MediaType=Glossy", filepath], (err, _stdout, stderr) => {
       if (err) console.error("Print failed:", stderr || err.message);
       else console.log(`Printed ${filename}`);
     });
