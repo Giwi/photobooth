@@ -26,6 +26,7 @@ const NO_BG_SVG = "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http:/
 
 let selectedBg = 0;
 let backgrounds = [];
+let watermark = null;
 let bgImage = null;
 let bgReady = false;
 let busy = false;
@@ -230,6 +231,7 @@ function captureFrame() {
     const pos = backgrounds[selectedBg]?.position || null;
     drawBgTo(ctx, bgImage, W, H, pos);
   }
+  drawWatermark(ctx);
   return ctx.getImageData(0, 0, W, H);
 }
 
@@ -240,6 +242,23 @@ function drawVideoCrop(c) {
   const sw = vw * scale;
   const sh = vh * scale;
   c.drawImage(video, (W - sw) / 2, (H - sh) / 2, sw, sh);
+}
+
+function drawWatermark(c) {
+  if (!watermark) return;
+  c.save();
+  const fontSize = Math.round(W / 30);
+  c.font = `bold ${fontSize}px system-ui, sans-serif`;
+  const metrics = c.measureText(watermark);
+  const pad = fontSize * 0.6;
+  const barH = fontSize + pad * 2;
+  c.fillStyle = "rgba(0,0,0,0.45)";
+  c.fillRect(0, H - barH, W, barH);
+  c.textAlign = "center";
+  c.textBaseline = "middle";
+  c.fillStyle = "rgba(255,255,255,0.85)";
+  c.fillText(watermark, W / 2, H - barH / 2);
+  c.restore();
 }
 
 function frameToDataUrl(imageData) {
@@ -348,7 +367,9 @@ async function init() {
   applyMirror();
 
   const res = await fetch("/api/backgrounds");
-  backgrounds = [null, ...await res.json()];
+  const data = await res.json();
+  backgrounds = [null, ...data.backgrounds];
+  watermark = data.watermark;
   renderBackgrounds();
   applyBg(0);
 }

@@ -21,10 +21,13 @@ app.get("/api/backgrounds", async (_req, res) => {
     const files = await fs.readdir(BG_DIR);
     const bgFiles = files.filter((f) => /\.(png|jpe?g|svg|webp)$/i.test(f));
     let config: Record<string, { position?: string }> = {};
+    let watermark: string | null = null;
     try {
-      config = JSON.parse(await fs.readFile(CONFIG_PATH, "utf8")).backgrounds || {};
+      const cfg = JSON.parse(await fs.readFile(CONFIG_PATH, "utf8"));
+      config = cfg.backgrounds || {};
+      watermark = cfg.watermark || null;
     } catch {}
-    res.json(bgFiles.map((f) => ({ file: f, position: config[f]?.position || null })));
+    res.json({ backgrounds: bgFiles.map((f) => ({ file: f, position: config[f]?.position || null })), watermark });
   } catch {
     res.json([]);
   }
