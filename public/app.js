@@ -14,6 +14,8 @@ const backgroundsEl = document.getElementById("backgrounds");
 const captureBtn = document.getElementById("capture");
 const btnMirror = document.getElementById("btn-mirror");
 const btnStrip = document.getElementById("btn-strip");
+const btnCamera = document.getElementById("btn-camera");
+const cameraDropdown = document.getElementById("camera-dropdown");
 
 const W = 1800;
 const H = 1200;
@@ -334,6 +336,55 @@ document.querySelectorAll(".cd-btn").forEach((btn) => {
   });
 });
 
+// --- Camera picker ---
+let currentDeviceId = null;
+
+async function switchCamera(deviceId) {
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { deviceId: { exact: deviceId }, width: { ideal: W }, height: { ideal: H } },
+  });
+  const oldStream = video.srcObject;
+  if (oldStream) oldStream.getTracks().forEach((t) => t.stop());
+  video.srcObject = stream;
+  await video.play();
+  currentDeviceId = deviceId;
+  updateCameraDropdown();
+  cameraDropdown.hidden = true;
+}
+
+function updateCameraDropdown() {
+  cameraDropdown.querySelectorAll(".cam-option").forEach((el) => {
+    el.classList.toggle("active", el.dataset.id === currentDeviceId);
+  });
+}
+
+async function populateCameras() {
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const cameras = devices.filter((d) => d.kind === "videoinput");
+  cameraDropdown.innerHTML = "";
+  cameras.forEach((cam) => {
+    const opt = document.createElement("div");
+    opt.className = "cam-option";
+    opt.dataset.id = cam.deviceId;
+    opt.textContent = cam.label || `Camera ${cameraDropdown.children.length + 1}`;
+    opt.addEventListener("click", () => switchCamera(cam.deviceId));
+    cameraDropdown.appendChild(opt);
+  });
+  updateCameraDropdown();
+}
+
+btnCamera.addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (cameraDropdown.hidden) {
+    populateCameras();
+    cameraDropdown.hidden = false;
+  } else {
+    cameraDropdown.hidden = true;
+  }
+});
+
+document.addEventListener("click", () => { cameraDropdown.hidden = true; });
+
 // --- Keyboard ---
 document.addEventListener("keydown", (e) => {
   if (e.key === " " || e.code === "Space") {
@@ -364,6 +415,9 @@ async function init() {
   video.srcObject = stream;
   await video.play();
 
+  const track = stream.getVideoTracks()[0];
+  if (track) currentDeviceId = track.getSettings().deviceId;
+
   applyMirror();
 
   const res = await fetch("/api/backgrounds");
@@ -372,6 +426,8 @@ async function init() {
   watermark = data.watermark;
   renderBackgrounds();
   applyBg(0);
+
+  populateCameras();
 }
 
 init().catch((e) => {

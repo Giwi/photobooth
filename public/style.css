@@ -234,6 +234,41 @@ body {
   color: #00bbff;
 }
 
+/* Camera picker */
+#camera-picker-wrap {
+  position: relative;
+}
+
+#camera-dropdown {
+  position: absolute;
+  bottom: 48px;
+  right: 0;
+  min-width: 180px;
+  max-width: 260px;
+  background: rgba(20, 20, 20, 0.9);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+#camera-dropdown[hidden] { display: none; }
+
+.cam-option {
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 0.12s;
+}
+
+.cam-option:hover { background: rgba(255, 255, 255, 0.1); }
+.cam-option.active { color: #00bbff; background: rgba(0, 187, 255, 0.15); }
+
 /* Capture button — translucent circle with halo */
 #capture {
   position: absolute;
