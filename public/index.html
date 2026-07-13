@@ -4,23 +4,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Photobooth</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div id="app">
     <div id="backgrounds"></div>
     <div id="viewport">
-      <video id="video" autoplay playsinline muted></video>
-      <canvas id="live-canvas"></canvas>
+      <div id="video-box">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="live-canvas"></canvas>
+      </div>
       <canvas id="compositor" hidden></canvas>
       <div id="countdown"></div>
       <div id="flash"></div>
       <div id="preview" hidden>
         <img id="preview-img" alt="Captured photo">
         <div id="preview-actions">
-          <button id="btn-save">✓ Save</button>
-          <button id="btn-print">🖨 Print</button>
-          <button id="btn-cancel">✕ Discard</button>
+          <button id="btn-save"><i class="bi bi-check-lg"></i> Save</button>
+          <button id="btn-print"><i class="bi bi-printer"></i> Print</button>
+          <button id="btn-cancel"><i class="bi bi-x-lg"></i> Discard</button>
         </div>
       </div>
     </div>

@@ -135,11 +135,6 @@ function updateBgSelection() {
 // --- Capture ---
 captureBtn.addEventListener("click", capture);
 
-document.getElementById("viewport").addEventListener("click", (e) => {
-  if (e.target.closest("#preview")) return;
-  if (!busy) capture();
-});
-
 async function capture() {
   if (busy) return;
   busy = true;
@@ -341,7 +336,7 @@ let currentDeviceId = null;
 
 async function switchCamera(deviceId) {
   const stream = await navigator.mediaDevices.getUserMedia({
-    video: { deviceId: { exact: deviceId }, width: { ideal: W }, height: { ideal: H } },
+    video: { deviceId: { exact: deviceId }, width: { ideal: W }, height: { ideal: H }, aspectRatio: { ideal: 3 / 2 } },
   });
   const oldStream = video.srcObject;
   if (oldStream) oldStream.getTracks().forEach((t) => t.stop());
@@ -410,7 +405,7 @@ document.addEventListener("keydown", (e) => {
 // --- Init ---
 async function init() {
   const stream = await navigator.mediaDevices.getUserMedia({
-    video: { width: { ideal: W }, height: { ideal: H } },
+    video: { width: { ideal: W }, height: { ideal: H }, aspectRatio: { ideal: 3 / 2 } },
   });
   video.srcObject = stream;
   await video.play();
