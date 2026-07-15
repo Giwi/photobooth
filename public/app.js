@@ -132,7 +132,7 @@ function clearBg() {
 function drawBgTo(c, img, cw, ch, position) {
   const iw = img.naturalWidth || img.width;
   const ih = img.naturalHeight || img.height;
-  const scale = Math.min(cw / iw, ch / ih);
+  const scale = Math.max(cw / iw, ch / ih);
   const sw = iw * scale;
   const sh = ih * scale;
   const { x, y } = parsePosition(position);
