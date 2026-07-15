@@ -21,14 +21,14 @@
       <div id="preview" hidden>
         <img id="preview-img" alt="Captured photo">
         <div id="preview-actions">
-          <button id="btn-save"><i class="bi bi-check-lg"></i> Save</button>
-          <button id="btn-print"><i class="bi bi-printer"></i> Print</button>
-          <button id="btn-cancel"><i class="bi bi-x-lg"></i> Discard</button>
+          <button id="btn-save" data-i18n="btn.save"><i class="bi bi-check-lg"></i> Save</button>
+          <button id="btn-print" data-i18n="btn.print"><i class="bi bi-printer"></i> Print</button>
+          <button id="btn-cancel" data-i18n="btn.discard"><i class="bi bi-x-lg"></i> Discard</button>
         </div>
       </div>
     </div>
     <div id="settings">
-      <button id="btn-mirror" class="setting-btn" title="Mirror mode (M)">
+      <button id="btn-mirror" class="setting-btn" data-i18n-title="title.mirror">
         <i class="bi bi-arrow-left-right"></i>
       </button>
       <div id="countdown-setting">
@@ -36,14 +36,20 @@
         <button class="cd-btn" data-duration="5">5s</button>
         <button class="cd-btn" data-duration="10">10s</button>
       </div>
-      <button id="btn-strip" class="setting-btn" title="Photo strip (T)">
+      <button id="btn-strip" class="setting-btn" data-i18n-title="title.strip">
         <i class="bi bi-grid"></i>
       </button>
       <div id="camera-picker-wrap">
-        <button id="btn-camera" class="setting-btn" title="Webcam">
+        <button id="btn-camera" class="setting-btn" data-i18n-title="title.webcam">
           <i class="bi bi-camera-video"></i>
         </button>
         <div id="camera-dropdown" hidden></div>
+      </div>
+      <div id="help-picker-wrap">
+        <button id="btn-help" class="setting-btn" data-i18n-title="title.help">
+          <i class="bi bi-keyboard"></i>
+        </button>
+        <div id="help-popup" hidden></div>
       </div>
     </div>
     <button id="capture"></button>

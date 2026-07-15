@@ -8,6 +8,7 @@ const PORT = 3000;
 const ROOT = path.resolve();
 const PHOTOS_DIR = path.join(ROOT, "photos");
 const BG_DIR = path.join(process.env.PHOTOBOOTH_BACKGROUNDS || path.join(ROOT, "backgrounds"));
+const I18N_DIR = path.join(ROOT, "i18n");
 const CONFIG_PATH = path.join(ROOT, "config.json");
 
 app.use(express.json({ limit: "10mb" }));
@@ -24,14 +25,22 @@ app.get("/api/backgrounds", async (_req, res) => {
     let watermark: string | null = null;
     let keys: Record<string, string> | null = null;
     let gamepad: Record<string, number> | null = null;
+    let lang = "en";
+    let i18n: Record<string, string> = {};
     try {
       const cfg = JSON.parse(await fs.readFile(CONFIG_PATH, "utf8"));
       config = cfg.backgrounds || {};
       watermark = cfg.watermark || null;
       keys = cfg.keys || null;
       gamepad = cfg.gamepad || null;
+      lang = cfg.lang || "en";
     } catch {}
-    res.json({ backgrounds: bgFiles.map((f) => ({ file: f, position: config[f]?.position || null })), watermark, keys, gamepad });
+    try {
+      i18n = JSON.parse(await fs.readFile(path.join(I18N_DIR, `${lang}.json`), "utf8"));
+    } catch {
+      try { i18n = JSON.parse(await fs.readFile(path.join(I18N_DIR, "en.json"), "utf8")); } catch {}
+    }
+    res.json({ backgrounds: bgFiles.map((f) => ({ file: f, position: config[f]?.position || null })), watermark, keys, gamepad, lang, i18n });
   } catch {
     res.json([]);
   }

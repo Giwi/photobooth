@@ -16,6 +16,8 @@ const btnMirror = document.getElementById("btn-mirror");
 const btnStrip = document.getElementById("btn-strip");
 const btnCamera = document.getElementById("btn-camera");
 const cameraDropdown = document.getElementById("camera-dropdown");
+const btnHelp = document.getElementById("btn-help");
+const helpPopup = document.getElementById("help-popup");
 
 const W = 1800;
 const H = 1200;
@@ -56,8 +58,31 @@ let gamepadMap = {
   strip: 9,
 };
 let prevGamepadState = {};
+let i18n = {};
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function t(key) { return i18n[key] || key; }
+
+function applyTranslations() {
+  document.title = t("title");
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const key = el.getAttribute("data-i18n");
+    const label = t(key);
+    if (!label) return;
+    const icon = el.querySelector("i");
+    if (icon) {
+      el.textContent = "";
+      el.appendChild(icon);
+      el.append(" " + label);
+    } else {
+      el.textContent = label;
+    }
+  });
+  document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+    el.title = t(el.getAttribute("data-i18n-title"));
+  });
+}
 
 // --- Toast ---
 const toastsEl = document.getElementById("toasts");
@@ -338,9 +363,9 @@ function savePhoto(dataUrl, print) {
     .then((r) => r.json())
     .then((d) => {
       if (d.error) { notify(d.error, "error"); return; }
-      notify(print ? "Photo saved & sent to print" : "Photo saved", "success");
+      notify(print ? t("notify.savedPrint") : t("notify.saved"), "success");
     })
-    .catch((e) => { console.error("Save/print failed:", e); notify("Save failed", "error"); });
+    .catch((e) => { console.error("Save/print failed:", e); notify(t("notify.saveFailed"), "error"); });
 }
 
 // --- Settings ---
@@ -382,7 +407,7 @@ async function switchCamera(deviceId) {
   currentDeviceId = deviceId;
   updateCameraDropdown();
   cameraDropdown.hidden = true;
-  notify("Camera switched", "info", 2000);
+  notify(t("notify.cameraSwitched"), "info", 2000);
 }
 
 function updateCameraDropdown() {
@@ -416,7 +441,43 @@ btnCamera.addEventListener("click", (e) => {
   }
 });
 
-document.addEventListener("click", () => { cameraDropdown.hidden = true; });
+document.addEventListener("click", () => { cameraDropdown.hidden = true; helpPopup.hidden = true; });
+
+// --- Help popup ---
+function renderHelp() {
+  const labelMap = {
+    capture: t("help.capture"),
+    save: t("help.save"),
+    print: t("help.print"),
+    cancel: t("help.discard"),
+    prevBg: t("help.prevBg"),
+    nextBg: t("help.nextBg"),
+    mirror: t("help.mirror"),
+    strip: t("help.strip"),
+  };
+  const keyLabels = {
+    " ": "Space", ArrowLeft: "←", ArrowRight: "→", Enter: "↵", Escape: "Esc",
+  };
+  helpPopup.innerHTML = "";
+  for (const [action, label] of Object.entries(labelMap)) {
+    const key = keyMap[action];
+    if (!key) continue;
+    const row = document.createElement("div");
+    row.className = "help-row";
+    row.innerHTML = `<span>${label}</span><kbd>${keyLabels[key] || key}</kbd>`;
+    helpPopup.appendChild(row);
+  }
+}
+
+btnHelp.addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (helpPopup.hidden) {
+    renderHelp();
+    helpPopup.hidden = false;
+  } else {
+    helpPopup.hidden = true;
+  }
+});
 
 // --- Input dispatch ---
 function dispatchAction(action) {
@@ -478,14 +539,14 @@ function pollGamepad() {
 
 window.addEventListener("gamepadconnected", (e) => {
   console.log("Gamepad connected:", e.gamepad.id);
-  notify(`Gamepad connected: ${e.gamepad.id}`, "success");
+  notify(`${t("notify.gamepadConnected")} ${e.gamepad.id}`, "success");
   prevGamepadState = {};
   requestAnimationFrame(pollGamepad);
 });
 
 window.addEventListener("gamepaddisconnected", (e) => {
   console.log("Gamepad disconnected:", e.gamepad.id);
-  notify(`Gamepad disconnected: ${e.gamepad.id}`, "error");
+  notify(`${t("notify.gamepadDisconnected")} ${e.gamepad.id}`, "error");
 });
 
 // --- Init ---
@@ -507,6 +568,8 @@ async function init() {
   watermark = data.watermark;
   if (data.keys) keyMap = { ...keyMap, ...data.keys };
   if (data.gamepad) gamepadMap = { ...gamepadMap, ...data.gamepad };
+  if (data.i18n) i18n = data.i18n;
+  applyTranslations();
   renderBackgrounds();
   applyBg(0);
 
