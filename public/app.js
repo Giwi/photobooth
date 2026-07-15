@@ -132,11 +132,11 @@ function clearBg() {
 function drawBgTo(c, img, cw, ch, position) {
   const iw = img.naturalWidth || img.width;
   const ih = img.naturalHeight || img.height;
-  const scale = Math.max(cw / iw, ch / ih);
-  const srcW = cw / scale;
-  const srcH = ch / scale;
+  const scale = Math.min(cw / iw, ch / ih);
+  const sw = iw * scale;
+  const sh = ih * scale;
   const { x, y } = parsePosition(position);
-  c.drawImage(img, (iw - srcW) * x, (ih - srcH) * y, srcW, srcH, 0, 0, cw, ch);
+  c.drawImage(img, (cw - sw) * x, (ch - sh) * y, sw, sh);
 }
 
 function drawBg() {
