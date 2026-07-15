@@ -24,7 +24,7 @@ app.get("/api/backgrounds", async (_req, res) => {
     let config: Record<string, { position?: string }> = {};
     let watermark: string | null = null;
     let keys: Record<string, string> | null = null;
-    let gamepad: Record<string, number> | null = null;
+    let gamepad: Record<string, number | { axis: number; dir: number }> | null = null;
     let lang = "en";
     let i18n: Record<string, string> = {};
     try {
