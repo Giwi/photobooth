@@ -35,8 +35,39 @@ let busy = false;
 let mirrorMode = true;
 let countdownDuration = 3;
 let stripMode = false;
+let keyMap = {
+  capture: " ",
+  save: "s",
+  print: "Enter",
+  cancel: "Escape",
+  prevBg: "ArrowLeft",
+  nextBg: "ArrowRight",
+  mirror: "m",
+  strip: "t",
+};
+let gamepadMap = {
+  capture: 0,
+  save: 2,
+  print: 3,
+  cancel: 1,
+  prevBg: 14,
+  nextBg: 15,
+  mirror: 8,
+  strip: 9,
+};
+let prevGamepadState = {};
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// --- Toast ---
+const toastsEl = document.getElementById("toasts");
+function notify(msg, type = "info", ms = 3000) {
+  const el = document.createElement("div");
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  toastsEl.appendChild(el);
+  setTimeout(() => { el.classList.add("out"); el.addEventListener("animationend", () => el.remove()); }, ms);
+}
 
 // --- Position parser ---
 function parsePosition(pos) {
@@ -303,7 +334,13 @@ function savePhoto(dataUrl, print) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ image: dataUrl, print }),
-  }).catch((e) => console.error("Save/print failed:", e));
+  })
+    .then((r) => r.json())
+    .then((d) => {
+      if (d.error) { notify(d.error, "error"); return; }
+      notify(print ? "Photo saved & sent to print" : "Photo saved", "success");
+    })
+    .catch((e) => { console.error("Save/print failed:", e); notify("Save failed", "error"); });
 }
 
 // --- Settings ---
@@ -345,6 +382,7 @@ async function switchCamera(deviceId) {
   currentDeviceId = deviceId;
   updateCameraDropdown();
   cameraDropdown.hidden = true;
+  notify("Camera switched", "info", 2000);
 }
 
 function updateCameraDropdown() {
@@ -380,26 +418,74 @@ btnCamera.addEventListener("click", (e) => {
 
 document.addEventListener("click", () => { cameraDropdown.hidden = true; });
 
-// --- Keyboard ---
-document.addEventListener("keydown", (e) => {
-  if (e.key === " " || e.code === "Space") {
-    e.preventDefault();
+// --- Input dispatch ---
+function dispatchAction(action) {
+  if (action === "capture") {
     if (!busy) capture();
-  } else if (e.key === "Enter") {
+  } else if (action === "print") {
     if (!preview.hidden) btnPrint.onclick();
-  } else if (e.key === "s" || e.key === "S") {
+  } else if (action === "save") {
     if (!preview.hidden) btnSave.onclick();
-  } else if (e.key === "Escape") {
+  } else if (action === "cancel") {
     if (!preview.hidden) btnCancel.onclick();
-  } else if (e.key === "ArrowLeft") {
+  } else if (action === "prevBg") {
     if (!busy && backgrounds.length) applyBg((selectedBg - 1 + backgrounds.length) % backgrounds.length);
-  } else if (e.key === "ArrowRight") {
+  } else if (action === "nextBg") {
     if (!busy && backgrounds.length) applyBg((selectedBg + 1) % backgrounds.length);
-  } else if (e.key === "m" || e.key === "M") {
+  } else if (action === "mirror") {
     btnMirror.click();
-  } else if (e.key === "t" || e.key === "T") {
+  } else if (action === "strip") {
     btnStrip.click();
   }
+}
+
+function keyMatch(key, mapping) {
+  return key.toLowerCase() === mapping.toLowerCase();
+}
+
+// --- Keyboard ---
+document.addEventListener("keydown", (e) => {
+  const k = e.key;
+  for (const [action, binding] of Object.entries(keyMap)) {
+    if (keyMatch(k, binding) || (action === "capture" && e.code === "Space")) {
+      e.preventDefault();
+      dispatchAction(action);
+      return;
+    }
+  }
+});
+
+// --- Gamepad ---
+function pollGamepad() {
+  const gamepads = navigator.getGamepads();
+  if (!gamepads) return;
+  const gp = gamepads[0];
+  if (!gp) return;
+
+  for (const [action, btnIndex] of Object.entries(gamepadMap)) {
+    if (btnIndex == null) continue;
+    const pressed = gp.buttons[btnIndex]?.pressed;
+    const wasPressed = prevGamepadState[btnIndex];
+    if (pressed && !wasPressed) {
+      console.log(`Gamepad button ${btnIndex} → ${action}`, gp.id);
+      dispatchAction(action);
+    }
+    prevGamepadState[btnIndex] = pressed;
+  }
+
+  requestAnimationFrame(pollGamepad);
+}
+
+window.addEventListener("gamepadconnected", (e) => {
+  console.log("Gamepad connected:", e.gamepad.id);
+  notify(`Gamepad connected: ${e.gamepad.id}`, "success");
+  prevGamepadState = {};
+  requestAnimationFrame(pollGamepad);
+});
+
+window.addEventListener("gamepaddisconnected", (e) => {
+  console.log("Gamepad disconnected:", e.gamepad.id);
+  notify(`Gamepad disconnected: ${e.gamepad.id}`, "error");
 });
 
 // --- Init ---
@@ -419,6 +505,8 @@ async function init() {
   const data = await res.json();
   backgrounds = [null, ...data.backgrounds];
   watermark = data.watermark;
+  if (data.keys) keyMap = { ...keyMap, ...data.keys };
+  if (data.gamepad) gamepadMap = { ...gamepadMap, ...data.gamepad };
   renderBackgrounds();
   applyBg(0);
 

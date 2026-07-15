@@ -22,12 +22,16 @@ app.get("/api/backgrounds", async (_req, res) => {
     const bgFiles = files.filter((f) => /\.(png|jpe?g|svg|webp)$/i.test(f));
     let config: Record<string, { position?: string }> = {};
     let watermark: string | null = null;
+    let keys: Record<string, string> | null = null;
+    let gamepad: Record<string, number> | null = null;
     try {
       const cfg = JSON.parse(await fs.readFile(CONFIG_PATH, "utf8"));
       config = cfg.backgrounds || {};
       watermark = cfg.watermark || null;
+      keys = cfg.keys || null;
+      gamepad = cfg.gamepad || null;
     } catch {}
-    res.json({ backgrounds: bgFiles.map((f) => ({ file: f, position: config[f]?.position || null })), watermark });
+    res.json({ backgrounds: bgFiles.map((f) => ({ file: f, position: config[f]?.position || null })), watermark, keys, gamepad });
   } catch {
     res.json([]);
   }
