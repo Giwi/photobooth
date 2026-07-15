@@ -58,6 +58,7 @@ let gamepadMap = {
   strip: 9,
 };
 let prevGamepadState = {};
+let prevAxisState = {};
 let i18n = {};
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -132,10 +133,10 @@ function drawBgTo(c, img, cw, ch, position) {
   const iw = img.naturalWidth || img.width;
   const ih = img.naturalHeight || img.height;
   const scale = Math.max(cw / iw, ch / ih);
-  const sw = iw * scale;
-  const sh = ih * scale;
+  const srcW = cw / scale;
+  const srcH = ch / scale;
   const { x, y } = parsePosition(position);
-  c.drawImage(img, (cw - sw) * x, (ch - sh) * y, sw, sh);
+  c.drawImage(img, (iw - srcW) * x, (ih - srcH) * y, srcW, srcH, 0, 0, cw, ch);
 }
 
 function drawBg() {
@@ -517,21 +518,35 @@ document.addEventListener("keydown", (e) => {
 });
 
 // --- Gamepad ---
+const AXIS_THRESHOLD = 0.5;
+
 function pollGamepad() {
   const gamepads = navigator.getGamepads();
   if (!gamepads) return;
   const gp = gamepads[0];
   if (!gp) return;
 
-  for (const [action, btnIndex] of Object.entries(gamepadMap)) {
-    if (btnIndex == null) continue;
-    const pressed = gp.buttons[btnIndex]?.pressed;
-    const wasPressed = prevGamepadState[btnIndex];
-    if (pressed && !wasPressed) {
-      console.log(`Gamepad button ${btnIndex} → ${action}`, gp.id);
-      dispatchAction(action);
+  for (const [action, binding] of Object.entries(gamepadMap)) {
+    if (binding == null) continue;
+
+    if (typeof binding === "number") {
+      const pressed = gp.buttons[binding]?.pressed;
+      const wasPressed = prevGamepadState[binding];
+      if (pressed && !wasPressed) {
+        console.log(`Gamepad button ${binding} → ${action}`, gp.id);
+        dispatchAction(action);
+      }
+      prevGamepadState[binding] = pressed;
+    } else if (binding.axis != null) {
+      const val = gp.axes[binding.axis] || 0;
+      const active = binding.dir > 0 ? val > AXIS_THRESHOLD : val < -AXIS_THRESHOLD;
+      const wasActive = prevAxisState[action];
+      if (active && !wasActive) {
+        console.log(`Gamepad axis ${binding.axis} → ${action}`, gp.id);
+        dispatchAction(action);
+      }
+      prevAxisState[action] = active;
     }
-    prevGamepadState[btnIndex] = pressed;
   }
 
   requestAnimationFrame(pollGamepad);
@@ -541,6 +556,7 @@ window.addEventListener("gamepadconnected", (e) => {
   console.log("Gamepad connected:", e.gamepad.id);
   notify(`${t("notify.gamepadConnected")} ${e.gamepad.id}`, "success");
   prevGamepadState = {};
+  prevAxisState = {};
   requestAnimationFrame(pollGamepad);
 });
 
