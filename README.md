@@ -26,12 +26,16 @@ Or use the launch script (starts the server and opens a fullscreen browser):
 
 ## Features
 
-- **Mirror mode** — on by default, toggle with the arrow icon or `M`
-- **Photo strip** — toggle with the grid icon or `T`, captures 4 shots in a 2×2 grid
+- **Mirror mode** — on by default, toggle with the arrow icon or keyboard shortcut
+- **Photo strip** — captures 4 shots in a 2×2 grid
 - **Custom countdown** — choose 3s, 5s, or 10s from the settings bar
 - **Camera picker** — switch between connected webcams from the settings bar
 - **Watermark** — optional text on a translucent bar at the bottom of every photo
-- **Crop-fill** — video and backgrounds are center-cropped to fill the 3:2 output, no letterboxing
+- **Backgrounds** — fit inside the canvas preserving aspect ratio, with configurable position
+- **Gamepad support** — navigate backgrounds and trigger actions with a gamepad
+- **I18n** — English, French, German, Spanish (set `lang` in `config.json`)
+- **Toast notifications** — save/print feedback and device connection alerts
+- **Help popup** — keyboard shortcut reference accessible from the settings bar
 
 ## Backgrounds
 
@@ -39,13 +43,14 @@ Place image files (PNG, JPG, WebP, SVG) in the `backgrounds/` folder. They appea
 
 The "No BG" option (grey frame with cross) captures the raw webcam frame with no overlay.
 
-### Custom position
+Backgrounds are scaled to fit inside the canvas while preserving their aspect ratio. Use `config.json` to control where each background is positioned.
 
-Use `config.json` to override where a background is placed on the canvas:
+### Custom position
 
 ```json
 {
   "watermark": "© 2026 My Photobooth",
+  "lang": "en",
   "backgrounds": {
     "beach.png": { "position": "bottom right" },
     "sky.png": { "position": "top" },
@@ -86,6 +91,8 @@ Omit or leave empty to disable.
 
 ## Keyboard shortcuts
 
+Keyboard shortcuts are configurable in `config.json` under the `keys` section. The default mapping:
+
 | Key | Action |
 |-----|--------|
 | `Space` | Capture |
@@ -96,7 +103,50 @@ Omit or leave empty to disable.
 | `m` | Toggle mirror mode |
 | `t` | Toggle strip mode |
 
+A keyboard shortcut reference is available from the help button (keyboard icon) in the settings bar.
+
+## Gamepad support
+
+Connect a gamepad and use it to control the photobooth. Button and axis bindings are configurable in `config.json`:
+
+```json
+{
+  "gamepad": {
+    "capture": 0,
+    "save": 2,
+    "print": 3,
+    "cancel": 1,
+    "prevBg": 14,
+    "nextBg": 15,
+    "mirror": 8,
+    "strip": 9,
+    "prevBgAxis": { "axis": 0, "dir": -1 },
+    "nextBgAxis": { "axis": 0, "dir": 1 }
+  }
+}
+```
+
+Values are either a button index (number) or an axis binding (`{ "axis": N, "dir": -1|1 }`). Standard gamepad layout: 0=A, 1=B, 2=X, 3=Y, 8=LB, 9=RB, 14=DPadLeft, 15=DPadRight. Axis 0 = left stick X.
+
+## I18n
+
+Set the language in `config.json`:
+
+```json
+{ "lang": "fr" }
+```
+
+Supported languages: `en` (default), `fr`, `de`, `es`. Translation files are in the `i18n/` folder.
+
 ## Configuration
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `lang` | `"en"` | UI language (`en`, `fr`, `de`, `es`) |
+| `watermark` | `null` | Watermark text on captured photos |
+| `keys` | (see above) | Keyboard shortcut bindings |
+| `gamepad` | (see above) | Gamepad button/axis bindings |
+| `backgrounds` | `{}` | Per-background position overrides |
 
 | Environment variable | Default | Description |
 |---------------------|---------|-------------|
@@ -113,7 +163,7 @@ lpstat -p              # list available printers
 lpoptions -d <printer>  # set default
 ```
 
-Printing is only triggered by the **Print** button or the `Enter` shortcut, not by Save.
+Printing is only triggered by the **Print** button or the print shortcut, not by Save.
 
 ## Raspberry Pi
 
@@ -126,4 +176,5 @@ Printing is only triggered by the **Print** button or the `Enter` shortcut, not 
 - **Icons**: Bootstrap Icons
 - **Camera**: `navigator.mediaDevices.getUserMedia`
 - **Compositing**: Canvas 2D API
+- **Gamepad**: Gamepad API
 - **Printing**: `lp` (CUPS)
